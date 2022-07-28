@@ -25,6 +25,8 @@ hits_dict_early = {}
 hits_dict = {}
 freqs = {}
 features_dict = {}
+surgery_index = 1
+
 
 # def give_fft_values(signal, sample_rate,):
 #     fft_spectrum = np.fft.rfft(signal)
@@ -57,7 +59,8 @@ def plot_fft(signal, str):
 def extract_features(data, sr):
 
     global FORWARD_WINDOW_LENGTH_OF_PEAK, BACKWARD_WINDOW_LENGTH_OF_PEAK
-    librosa.feature.zero_crossing_rate(data, int((FORWARD_WINDOW_LENGTH_OF_PEAK + BACKWARD_WINDOW_LENGTH_OF_PEAK) / 10))
+    zero_cross = librosa.feature.zero_crossing_rate(data, int((FORWARD_WINDOW_LENGTH_OF_PEAK + BACKWARD_WINDOW_LENGTH_OF_PEAK) / 10))
+    zero_cross = np.reshape(zero_cross, np.shape(zero_cross)[1])
     S = librosa.feature.melspectrogram(y=data, sr=sr, n_fft=2048)  # adjust the n_fft to lower values from 2048
     log_s = librosa.power_to_db(S, ref=np.max)
     log_s_values = np.mean(log_s, axis=0)
@@ -71,7 +74,8 @@ def extract_features(data, sr):
     tempo_beats, beats = librosa.beat.beat_track(y=y_percussive, sr=sr)
 
     # aligned_features = self.update_feature_len_dict(log_s_values, mfcc_values, chromagram_values, beats)
-    total_values = np.concatenate((log_s_values, mfcc_values, chromagram_values, beats, tempo, np.array([tempo_beats])))
+    total_values = np.concatenate((zero_cross, log_s_values, mfcc_values, chromagram_values,
+                                   beats, tempo, np.array([tempo_beats])))
 
     return total_values
 
@@ -121,7 +125,6 @@ if not CSV_READ:
         surgon_name = meta_data.split('-')[2]
         broach_index = meta_data.split('-')[3]
         Relative_shaft_size = meta_data.split('-')[4].split('.')[0]
-        surgery_index = 1
         print(i)
         # for PERCENTAGE_OF_LATE_HITS in PERCENTAGE_OF_LATE_HITS_LIST:
         total_hits_detected_in_broach = len(times[onset_frames])
@@ -155,7 +158,7 @@ if not CSV_READ:
 
     df = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in hits_dict.items()]))
     df = df.transpose()
-    # df.to_csv("DATA.csv")
+    df.to_csv("DATA.csv")
 
     df_features = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in features_dict.items()]))
     df_features = df_features.transpose()
